@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * This is sample for simple msg filter.
  * You can modify the code to record load/performance data.
  */
-public class SimpleRawLogger implements MsgFilter{
+public class RawLogger implements MsgFilter{
 	private static Log log=Log.get();
 	static AtomicLong inCounter=new AtomicLong(0);
 	static AtomicLong outCounter=new AtomicLong(0);
@@ -32,6 +32,6 @@ public class SimpleRawLogger implements MsgFilter{
 			log.w(e);
 		}
 		chain.doFilter(session,this);
-		log.i("So far total read: "+inCounter+" bytes, write: "+outCounter+" bytes");
+		log.i("So far total read: "+inCounter+" bytes, upload: "+outCounter+" bytes");
 	}
 }

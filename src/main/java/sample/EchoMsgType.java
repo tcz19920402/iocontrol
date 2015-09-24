@@ -7,6 +7,6 @@ import net.MsgType;
  *
  * Extend your msg type like this.
  */
-public enum SampleEchoMsgType implements MsgType{
+public enum EchoMsgType implements MsgType{
 	ECHO,ACK,EXIT_SERVER
 }

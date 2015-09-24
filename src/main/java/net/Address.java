@@ -5,11 +5,11 @@ import java.io.Serializable;
 /**
  * IP:port address as key.
  */
-class Address implements Serializable{
+public class Address implements Serializable{
 	private final String ip;
 	private final int port;
 
-	Address(String ip,int port){
+	public Address(String ip,int port){
 		this.ip=ip;
 		this.port=port;
 	}

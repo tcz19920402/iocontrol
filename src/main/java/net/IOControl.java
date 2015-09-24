@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class IOControl{
 	private static final Log log=Log.get();
 	private static int maxRetry=3;
-	private final GenericKeyedObjectPool<Address, SocketChannel> socketPool=new GenericKeyedObjectPool<>(new SocketPoolFactory());
-	private Map<MsgType, ArrayList<MsgHandler>> handlerChain=new HashMap<>();
+	private final GenericKeyedObjectPool<Address,SocketChannel> socketPool=new GenericKeyedObjectPool<>(new SocketPoolFactory());
+	private Map<MsgType,ArrayList<MsgHandler>> handlerChain=new HashMap<>();
 	private List<MsgFilter> filters=new ArrayList<>();
 	private BlockingQueue<InternalCmd> exitQueue=new LinkedBlockingQueue<>();
 	private Queue<InternalCmd> cmdQueue=new ConcurrentLinkedQueue<>();
@@ -271,6 +271,7 @@ public class IOControl{
 	/**
 	 * Send msg to ip:port once. Connection may be pooled.
 	 * This is client IO operation.
+	 * Connected socket and channel will be write to outgoing session
 	 *
 	 * @param session Msg to send.
 	 * @param ip      Target ip
@@ -294,6 +295,7 @@ public class IOControl{
 				oos.writeObject(session);
 				oos.flush();
 				session.setSocketChannel(cachedSocket);
+				session.setSocket(cachedSocket.socket());
 				socketPool.returnObject(address,cachedSocket);
 				return;
 			}catch(IOException e){
@@ -312,6 +314,18 @@ public class IOControl{
 
 	public void send(Session session,Address address) throws Exception{
 		send(session,address.getIp(),address.getPort());
+	}
+
+	/**
+	 * Get response from previously sent session.
+	 *
+	 * @param session previously sent session
+	 * @return response
+	 * @throws IOException
+	 */
+	public Session get(Session session) throws IOException{
+		SocketChannel socketChannel=session.getSocketChannel();
+		return process(socketChannel);
 	}
 
 	/**
@@ -362,7 +376,7 @@ public class IOControl{
 		return request(session,address.getIp(),address.getPort());
 	}
 
-	static class SocketPoolFactory extends BaseKeyedPooledObjectFactory<Address, SocketChannel>{
+	static class SocketPoolFactory extends BaseKeyedPooledObjectFactory<Address,SocketChannel>{
 		@Override
 		public SocketChannel create(Address address) throws Exception{
 			return SocketChannel.open(new InetSocketAddress(address.getIp(),address.getPort()));
@@ -510,7 +524,11 @@ public class IOControl{
 		public void run(){
 			try{
 				process(socketChannel);
-			}catch(IOException ignored){
+			}catch(IOException e){
+				log.w(e);
+				try{
+					socketChannel.close();
+				}catch(IOException ignored){}
 			}finally{
 				semaphore.release();
 				returnQueue.add(socketChannel);

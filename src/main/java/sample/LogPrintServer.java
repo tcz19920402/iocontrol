@@ -11,12 +11,12 @@ import java.io.IOException;
  *
  * Demo log server. It should be started before other clients/servers.
  */
-public class SimpleLogServer{
+public class LogPrintServer{
 	public static void main(String args[]){
 		try{
 			Wini conf=new Wini(new File("conf/sample/sample.ini"));
 			int port=conf.get("log","port",int.class);
-			new LogServer(port);
+			new net.LogServer(port);
 		}catch(IOException e){
 			e.printStackTrace();
 		}
