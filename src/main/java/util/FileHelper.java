@@ -40,6 +40,12 @@ public class FileHelper{
 	public static void pipe(ExecutorService executor,
 	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size,long position)
 			throws ExecutionException, InterruptedException{
+		pipe(executor,src,fDest,dest,size,position,0,0);
+	}
+	public static void pipe(ExecutorService executor,
+	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size,long position,
+	                        long start,long timeout)
+			throws ExecutionException, InterruptedException{
 		CyclicBarrier barrier=new CyclicBarrier(2);
 		GenericObjectPool<ByteBuffer> bufferRing=new GenericObjectPool<>(new ByteBufferFactory());
 		BlockingQueue<ByteBuffer> socketQueue=new ArrayBlockingQueue<>(queueLength);
@@ -51,15 +57,30 @@ public class FileHelper{
 		futures.add(executor.submit(reader));
 		futures.add(executor.submit(socketWriter));
 		futures.add(executor.submit(fileWriter));
-		for(int i=0;i<3;++i){
-			Future future=futures.get(i);
-			try{
-				future.get();
-			}catch(InterruptedException|ExecutionException e){
-				log.w(e);
-				for(int j=i+1;j<3;++j)
-					futures.get(j).cancel(true);
-				throw e;
+		if(timeout<=0)
+			for(int i=0;i<3;++i){
+				Future future=futures.get(i);
+				try{
+					future.get();
+				}catch(InterruptedException|ExecutionException e){
+					log.w(e);
+					for(int j=i+1;j<3;++j)
+						futures.get(j).cancel(true);
+					throw e;
+				}
+			}
+		else{
+			int i=0;
+			while(start+timeout>=System.currentTimeMillis()){
+				try{
+					futures.get(i).get();
+				}catch(InterruptedException|ExecutionException e){
+					log.w(e);
+					for(int j=i+1;j<3;++j)
+						futures.get(j).cancel(true);
+					throw e;
+				}
+				if(++i==3) break;
 			}
 		}
 	}

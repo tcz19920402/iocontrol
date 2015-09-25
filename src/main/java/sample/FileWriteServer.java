@@ -106,7 +106,7 @@ public class FileWriteServer{
 							forward.set("start",start);
 							control.send(forward,addresses.get(0));
 							FileHelper.pipe(session.getExecutor(),
-									src,dest,forward.getSocketChannel(),size);
+									src,dest,forward.getSocketChannel(),size,position,start,timeout);
 							fos.close();
 							if(newChunk.length()!=size) break;
 							log.i("File write to: "+newChunk.getAbsolutePath());
