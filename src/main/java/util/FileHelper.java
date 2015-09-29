@@ -9,6 +9,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,26 +27,38 @@ public class FileHelper{
 	public static void upload(FileChannel src,SocketChannel dest,long size) throws IOException{
 		upload(src,dest,size,0);
 	}
+
 	public static void upload(FileChannel src,SocketChannel dest,long size,long position) throws IOException{
 		while(position<size)
 			position+=src.transferTo(position,size-position,dest);
 	}
+
 	public static void download(SocketChannel src,FileChannel dest,long size,long position) throws IOException{
-		while(position<size)
-			position+=dest.transferFrom(src,position,size-position);
+		FileLock lock=dest.lock();
+		try{
+			while(position<size)
+				position+=dest.transferFrom(src,position,size-position);
+		}catch(IOException e){
+			throw e;
+		}finally{
+			lock.release();
+		}
 	}
+
 	public static void download(SocketChannel src,FileChannel dest,long size) throws IOException{
 		download(src,dest,size,0);
 	}
+
 	public static void pipe(ExecutorService executor,
 	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size,long position)
-			throws ExecutionException, InterruptedException{
+			throws ExecutionException, InterruptedException, IOException{
 		pipe(executor,src,fDest,dest,size,position,0,0);
 	}
+
 	public static void pipe(ExecutorService executor,
 	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size,long position,
 	                        long start,long timeout)
-			throws ExecutionException, InterruptedException{
+			throws ExecutionException, InterruptedException, IOException{
 		CyclicBarrier barrier=new CyclicBarrier(2);
 		GenericObjectPool<ByteBuffer> bufferRing=new GenericObjectPool<>(new ByteBufferFactory());
 		BlockingQueue<ByteBuffer> socketQueue=new ArrayBlockingQueue<>(queueLength);
@@ -57,36 +70,44 @@ public class FileHelper{
 		futures.add(executor.submit(reader));
 		futures.add(executor.submit(socketWriter));
 		futures.add(executor.submit(fileWriter));
-		if(timeout<=0)
-			for(int i=0;i<3;++i){
-				Future future=futures.get(i);
-				try{
-					future.get();
-				}catch(InterruptedException|ExecutionException e){
-					log.w(e);
-					for(int j=i+1;j<3;++j)
-						futures.get(j).cancel(true);
-					throw e;
+		FileLock lock=fDest.lock();
+		try{
+			if(timeout<=0)
+				for(int i=0;i<3;++i){
+					Future future=futures.get(i);
+					try{
+						future.get();
+					}catch(InterruptedException|ExecutionException e){
+						log.w(e);
+						for(int j=i+1;j<3;++j)
+							futures.get(j).cancel(true);
+						throw e;
+					}
+				}
+			else{
+				int i=0;
+				while(start+timeout>=System.currentTimeMillis()){
+					try{
+						futures.get(i).get();
+					}catch(InterruptedException|ExecutionException e){
+						log.w(e);
+						for(int j=i+1;j<3;++j)
+							futures.get(j).cancel(true);
+						throw e;
+					}
+					if(++i==3) break;
 				}
 			}
-		else{
-			int i=0;
-			while(start+timeout>=System.currentTimeMillis()){
-				try{
-					futures.get(i).get();
-				}catch(InterruptedException|ExecutionException e){
-					log.w(e);
-					for(int j=i+1;j<3;++j)
-						futures.get(j).cancel(true);
-					throw e;
-				}
-				if(++i==3) break;
-			}
+		}catch(InterruptedException|ExecutionException e){
+			throw e;
+		}finally{
+			lock.release();
 		}
 	}
+
 	public static void pipe(ExecutorService executor,
 	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size)
-			throws ExecutionException, InterruptedException{
+			throws ExecutionException, InterruptedException, IOException{
 		pipe(executor,src,fDest,dest,size,0);
 	}
 
@@ -97,6 +118,7 @@ public class FileHelper{
 		private GenericObjectPool<ByteBuffer> bufferRing;
 		private BlockingQueue<ByteBuffer> socketQueue;
 		private BlockingQueue<ByteBuffer> fileQueue;
+
 		Reader(SocketChannel src,long size,long position,GenericObjectPool<ByteBuffer> bufferRing,
 		       BlockingQueue<ByteBuffer> socketQueue,
 		       BlockingQueue<ByteBuffer> fileQueue){
@@ -107,6 +129,7 @@ public class FileHelper{
 			this.socketQueue=socketQueue;
 			this.fileQueue=fileQueue;
 		}
+
 		@Override
 		public Object call() throws Exception{
 			while(position<size){
@@ -131,6 +154,7 @@ public class FileHelper{
 		private long position;
 		private FileChannel fDest;
 		private BlockingQueue<ByteBuffer> fileQueue;
+
 		FileWriter(FileChannel fDest,CyclicBarrier barrier,long size,long position,
 		           BlockingQueue<ByteBuffer> fileQueue){
 			this.barrier=barrier;
@@ -161,6 +185,7 @@ public class FileHelper{
 		private long position;
 		private SocketChannel dest;
 		private BlockingQueue<ByteBuffer> socketQueue;
+
 		SocketWriter(SocketChannel dest,CyclicBarrier barrier,long size,long position,
 		             BlockingQueue<ByteBuffer> socketQueue,
 		             GenericObjectPool<ByteBuffer> bufferRing){
@@ -192,10 +217,12 @@ public class FileHelper{
 			super.passivateObject(p);
 			p.getObject().reset();
 		}
+
 		@Override
 		public ByteBuffer create() throws Exception{
 			return ByteBuffer.allocateDirect(bufferSize);
 		}
+
 		@Override
 		public PooledObject<ByteBuffer> wrap(ByteBuffer obj){
 			return new DefaultPooledObject<>(obj);
