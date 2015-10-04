@@ -189,6 +189,7 @@ public class FileWriteServer{
 			MsgHandler fileWrite=new WriteServer(server,Files.createTempDirectory(null));
 
 			MsgType[] type=FileWriteMsgType.values();
+			server.registerMsgFilterHead(new RawLogger());
 			server.registerMsgHandlerHead(fileWrite,type);
 			server.registerMsgHandlerHead(new SimpleLogger(),type);
 			// start server

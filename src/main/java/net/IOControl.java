@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class IOControl{
 	private static final Log log=Log.get();
 	private static int maxRetry=3;
-	private final GenericKeyedObjectPool<Address,SocketChannel> socketPool=new GenericKeyedObjectPool<>(new SocketPoolFactory());
-	private Map<MsgType,ArrayList<MsgHandler>> handlerChain=new HashMap<>();
+	private final GenericKeyedObjectPool<Address, SocketChannel> socketPool=new GenericKeyedObjectPool<>(new SocketPoolFactory());
+	private Map<MsgType, ArrayList<MsgHandler>> handlerChain=new HashMap<>();
 	private List<MsgFilter> filters=new ArrayList<>();
 	private BlockingQueue<InternalCmd> exitQueue=new LinkedBlockingQueue<>();
 	private Queue<InternalCmd> cmdQueue=new ConcurrentLinkedQueue<>();
@@ -376,7 +376,7 @@ public class IOControl{
 		return request(session,address.getIp(),address.getPort());
 	}
 
-	static class SocketPoolFactory extends BaseKeyedPooledObjectFactory<Address,SocketChannel>{
+	static class SocketPoolFactory extends BaseKeyedPooledObjectFactory<Address, SocketChannel>{
 		@Override
 		public SocketChannel create(Address address) throws Exception{
 			return SocketChannel.open(new InetSocketAddress(address.getIp(),address.getPort()));
@@ -451,8 +451,10 @@ public class IOControl{
 				while((returnedChannel=returnQueue.poll())!=null){
 					try{
 						counter.decrementAndGet();
-						returnedChannel.configureBlocking(false);
-						returnedChannel.register(selector,SelectionKey.OP_READ);
+						if(returnedChannel.isOpen()){
+							returnedChannel.configureBlocking(false);
+							returnedChannel.register(selector,SelectionKey.OP_READ);
+						}
 					}catch(IOException e){
 						log.w(e);
 					}
@@ -524,11 +526,12 @@ public class IOControl{
 		public void run(){
 			try{
 				process(socketChannel);
-			}catch(IOException e){
+			}catch(IOException|IllegalStateException e){
 				log.w(e);
 				try{
 					socketChannel.close();
-				}catch(IOException ignored){}
+				}catch(IOException ignored){
+				}
 			}finally{
 				semaphore.release();
 				returnQueue.add(socketChannel);
