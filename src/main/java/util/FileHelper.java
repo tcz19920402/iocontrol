@@ -24,15 +24,41 @@ public class FileHelper{
 	private static final int bufferSize=1024*256;
 	private static final int queueLength=8;
 
+	/**
+	 * Upload local disk file to socket channel.
+	 *
+	 * @param src  local disk file channel
+	 * @param dest target socket channel
+	 * @param size how many bytes to upload
+	 * @throws IOException
+	 */
 	public static void upload(FileChannel src,SocketChannel dest,long size) throws IOException{
 		upload(src,dest,size,0);
 	}
 
+	/**
+	 * Upload local disk file to socket channel, this method will upload up to size-position bytes.
+	 *
+	 * @param src      local disk file channel
+	 * @param dest     target socket channel
+	 * @param size     the last position of file channel to be upload
+	 * @param position the start position of file channel to be upload
+	 * @throws IOException
+	 */
 	public static void upload(FileChannel src,SocketChannel dest,long size,long position) throws IOException{
 		while(position<size)
 			position+=src.transferTo(position,size-position,dest);
 	}
 
+	/**
+	 * Download bytes from socket channel to local disk file channel, this method will download up to size-position bytes.
+	 *
+	 * @param src      socket channel to be read
+	 * @param dest     file channel to be write
+	 * @param size     the last position of file channel to be write
+	 * @param position the start position if file channel to be write
+	 * @throws IOException
+	 */
 	public static void download(SocketChannel src,FileChannel dest,long size,long position) throws IOException{
 		FileLock lock=dest.lock();
 		try{
@@ -45,16 +71,51 @@ public class FileHelper{
 		}
 	}
 
+	/**
+	 * Download bytes from socket channel to local disk file channel, this method will download up to size-position bytes.
+	 *
+	 * @param src  socket channel to be read
+	 * @param dest file channel to be write
+	 * @param size the total bytes of file channel to be write
+	 * @throws IOException
+	 */
 	public static void download(SocketChannel src,FileChannel dest,long size) throws IOException{
 		download(src,dest,size,0);
 	}
 
+	/**
+	 * Direct a socket byte stream to another socket channel and also local disk file channel.
+	 *
+	 * @param executor a thread pool, can be the one returned by Session.getExecutor()
+	 * @param src      src socket channel
+	 * @param fDest    target local disk file channel
+	 * @param dest     target socket channel
+	 * @param size     last position of file channel to be write
+	 * @param position start position of file channel to be write
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
 	public static void pipe(ExecutorService executor,
 	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size,long position)
 			throws ExecutionException, InterruptedException, IOException{
 		pipe(executor,src,fDest,dest,size,position,0,0);
 	}
 
+	/**
+	 * Direct a socket byte stream to another socket channel and also local disk file channel.
+	 *
+	 * @param executor a thread pool, can be the one returned by Session.getExecutor()
+	 * @param src      src socket channel
+	 * @param fDest    target local disk file channel
+	 * @param dest     target socket channel
+	 * @param size     last position of file channel to be write
+	 * @param position start position of file channel to be write
+	 * @param timeout  if timeout>0, operation aborts when timeout in ms is hit.
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
 	public static void pipe(ExecutorService executor,
 	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size,long position,
 	                        long start,long timeout)
@@ -105,6 +166,18 @@ public class FileHelper{
 		}
 	}
 
+	/**
+	 * Direct a socket byte stream to another socket channel and also local disk file channel.
+	 *
+	 * @param executor a thread pool, can be the one returned by Session.getExecutor()
+	 * @param src      src socket channel
+	 * @param fDest    target local disk file channel
+	 * @param dest     target socket channel
+	 * @param size     last position of file channel to be write
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
 	public static void pipe(ExecutorService executor,
 	                        SocketChannel src,FileChannel fDest,SocketChannel dest,long size)
 			throws ExecutionException, InterruptedException, IOException{

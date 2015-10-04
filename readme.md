@@ -16,15 +16,16 @@ The supported IO operations are: send, request, response.
 
 If IOControl.startServer is called, it is in server mode. Call waitServer to block your main thread if it has no other thing to do so it won't exit until server receives quit command. If IOControl.startServer is not called, it will be in client mode, and filters/handlers can still be used.
 
+Please check FileReadEchoServer/FileWriteServer for use of MsgHandler, and RawLogger for MsgFilter usage.
+
 # Samples
-* SimpleLogServer - A remote log server. You can redirect your log to it. It should be started before other server of coz.
-* SimpleServer - A simple server that responses to echo msg and also file read.
-* SimpleEchoClient - Command line client that sends your input to SimpleServer.
-* SampleFileReadClient - Command line client that reads remote file given file path.
+* LogPrintServer - A remote log server. You can redirect your log to it. It should be started before other server of coz.
+* FileReadEchoServer - A simple server that responses to echo msg and also file read.
+* EchoClient - Command line client that sends your input to SimpleServer.
+* FileReadClient - Command line client that reads remote file given file path.
+* FileWriteServer - A file server utilizing GFS like protocol.
+* FileWiteClient - File upload client. Accept coomandline input.
 * SystemInfo - Demo on how to get system load info.
 
 # Javadoc
 Some javadoc is offered. So if you are unsure about how to use the code, first check samples, then read javadoc, then if it's still unclear, send me email.
-
-# Note to D
-I'm still testing file write sample, please be patient and try existing code. It's hard to totally decouple read/write operation from other functions, so I put them into sample folder and you can modify the code to your need.
