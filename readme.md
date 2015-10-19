@@ -26,6 +26,7 @@ Please check FileReadEchoServer/FileWriteServer for use of MsgHandler, and RawLo
 * FileWriteServer - A file server utilizing GFS like protocol.
 * FileWiteClient - File upload client. Accept coomandline input.
 * SystemInfo - Demo on how to get system load info.
+* GracefulShutdownXXX - Demo on how to gracefully shutdown a connection
 
 # Javadoc
 Some javadoc is offered. So if you are unsure about how to use the code, first check samples, then read javadoc, then if it's still unclear, send me email.
