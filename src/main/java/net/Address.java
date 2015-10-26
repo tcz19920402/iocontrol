@@ -9,6 +9,11 @@ public class Address implements Serializable{
 	private final String ip;
 	private final int port;
 
+	public Address(){
+		this.ip=null;
+		this.port=-1;
+	}
+
 	public Address(String ip,int port){
 		this.ip=ip;
 		this.port=port;
