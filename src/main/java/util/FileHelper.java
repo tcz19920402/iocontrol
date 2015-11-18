@@ -9,7 +9,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,15 +59,8 @@ public class FileHelper{
 	 * @throws IOException
 	 */
 	public static void download(SocketChannel src,FileChannel dest,long size,long position) throws IOException{
-		FileLock lock=dest.lock();
-		try{
-			while(position<size)
-				position+=dest.transferFrom(src,position,size-position);
-		}catch(IOException e){
-			throw e;
-		}finally{
-			lock.release();
-		}
+		while(position<size)
+			position+=dest.transferFrom(src,position,size-position);
 	}
 
 	/**
@@ -131,38 +123,31 @@ public class FileHelper{
 		futures.add(executor.submit(reader));
 		futures.add(executor.submit(socketWriter));
 		futures.add(executor.submit(fileWriter));
-		FileLock lock=fDest.lock();
-		try{
-			if(timeout<=0)
-				for(int i=0;i<3;++i){
-					Future future=futures.get(i);
-					try{
-						future.get();
-					}catch(InterruptedException|ExecutionException e){
-						log.w(e);
-						for(int j=i+1;j<3;++j)
-							futures.get(j).cancel(true);
-						throw e;
-					}
-				}
-			else{
-				int i=0;
-				while(start+timeout>=System.currentTimeMillis()){
-					try{
-						futures.get(i).get();
-					}catch(InterruptedException|ExecutionException e){
-						log.w(e);
-						for(int j=i+1;j<3;++j)
-							futures.get(j).cancel(true);
-						throw e;
-					}
-					if(++i==3) break;
+		if(timeout<=0)
+			for(int i=0;i<3;++i){
+				Future future=futures.get(i);
+				try{
+					future.get();
+				}catch(InterruptedException|ExecutionException e){
+					log.w(e);
+					for(int j=i+1;j<3;++j)
+						futures.get(j).cancel(true);
+					throw e;
 				}
 			}
-		}catch(InterruptedException|ExecutionException e){
-			throw e;
-		}finally{
-			lock.release();
+		else{
+			int i=0;
+			while(start+timeout>=System.currentTimeMillis()){
+				try{
+					futures.get(i).get();
+				}catch(InterruptedException|ExecutionException e){
+					log.w(e);
+					for(int j=i+1;j<3;++j)
+						futures.get(j).cancel(true);
+					throw e;
+				}
+				if(++i==3) break;
+			}
 		}
 	}
 

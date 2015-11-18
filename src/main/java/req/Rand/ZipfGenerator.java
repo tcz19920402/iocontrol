@@ -18,7 +18,7 @@ public class ZipfGenerator implements RandomGenerator{
 	/**
 	 * Number of elements.
 	 */
-	long upper;
+	int upper;
 	/**
 	 * Constant equal to {@code hIntegral(1.5) - 1}.
 	 */
@@ -32,7 +32,7 @@ public class ZipfGenerator implements RandomGenerator{
 	 */
 	double s;
 
-	public ZipfGenerator(RandomGenerator uniformGenerator,long upper,double alpha){
+	public ZipfGenerator(double alpha,int upper,RandomGenerator uniformGenerator){
 		this.gen=uniformGenerator;
 		this.upper=upper;
 		this.exponent=alpha;
@@ -43,17 +43,24 @@ public class ZipfGenerator implements RandomGenerator{
 
 	@Override
 	public double nextDouble(){
-		return (double)nextLong()/upper;
+		return (double)nextInt()/upper;
 	}
 
 	@Override
-	public long nextLong(){
+	public int nextInt(int upper){
+		this.upper=upper;
+		this.hIntegralNumberOfElements=hIntegral(upper+0.5);
+		return nextInt();
+	}
+
+	@Override
+	public int nextInt(){
 		while(true){
 			final double u=hIntegralNumberOfElements+gen.nextDouble()*(hIntegralX1-hIntegralNumberOfElements);
 			// u is uniformly distributed in (hIntegralX1, hIntegralNumberOfElements]
 
 			double x=hIntegralInverse(u);
-			long k=(long)(x+0.5);
+			int k=(int)(x+0.5);
 			// Limit k to the range [1, numberOfElements]
 			// (k could be outside due to numerical inaccuracies)
 			if(k<1){

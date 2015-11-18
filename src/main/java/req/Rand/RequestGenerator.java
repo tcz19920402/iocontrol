@@ -2,32 +2,51 @@ package req.Rand;
 
 import req.Request;
 
+import java.util.*;
+
 public class RequestGenerator{
 	Request.ReqType[] types;
 	int len;
-	UniformGenerator gen;
+	RandomGenerator gen;
 	double[] steps;
 
-	public RequestGenerator(Request.ReqType[] types,double[] ratio){
-		this.types=types;
-		len=types.length;
-		gen=new UniformGenerator(1);
-		double sum=0.0;
-		for(int i=0;i<len;++i) sum+=ratio[i];
-		steps=new double[len];
-		steps[0]=ratio[0]/sum;
-		for(int i=1;i<len;++i) steps[i]=steps[i-1]+ratio[i]/sum;
+	static class ValueComparator implements Comparator<Map.Entry<Request.ReqType, Double>>{
+		@Override
+		public int compare(Map.Entry<Request.ReqType, Double> o1,Map.Entry<Request.ReqType, Double> o2){
+			double neg=o2.getValue()-o1.getValue();
+			return neg>0 ? 1 : neg<0 ? -1 : 0;
+		}
 	}
 
-	Request.ReqType bisec(int a,int b,double rd){
-		if(b-a==1) return types[a];
-		int half=(a+b)/2;
-		if(rd>steps[half-1])
-			return bisec(half,b,rd);
-		else return bisec(a,half,rd);
+	public RequestGenerator(Map<Request.ReqType, Double> ratio,RandomGenerator uniform){
+		gen=uniform;
+		len=ratio.size();
+		types=new Request.ReqType[len];
+		steps=new double[len];
+		List<Map.Entry<Request.ReqType, Double>> sorted=new ArrayList<>();
+		sorted.addAll(ratio.entrySet());
+		Collections.sort(sorted,new ValueComparator());
+		double sum=0.0;
+		int i=0;
+		for(Map.Entry<Request.ReqType, Double> entry : sorted){
+			types[i]=entry.getKey();
+			steps[i++]=entry.getValue();
+			System.out.println(entry.getKey()+":"+entry.getValue());
+			sum+=entry.getValue();
+		}
+		if(len>0){
+			steps[0]=steps[0]/sum;
+			for(i=1;i<len;++i){
+				steps[i]=steps[i]/sum+steps[i-1];
+			}
+		}
 	}
 
 	public Request.ReqType next(){
-		return bisec(0,len,gen.nextDouble());
+		double rd=gen.nextDouble();
+		for(int i=0;i<len;++i){
+			if(rd<steps[i]) return types[i];
+		}
+		return null;
 	}
 }

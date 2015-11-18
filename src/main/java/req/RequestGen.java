@@ -1,22 +1,11 @@
 package req;
 
-import req.Rand.RandomGenerator;
-import req.Rand.RequestGenerator;
-import req.Rand.UniformGenerator;
-import req.Rand.ZipfGenerator;
+import req.Rand.*;
 import util.Log;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Formatter;
-import java.util.List;
-import java.util.Scanner;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,96 +13,67 @@ import java.util.concurrent.Executors;
 public class RequestGen{
 	static Log log=Log.get();
 	final int numThreads;
-	Request.ReqType[] types;
-	double[] ratio;
-	int interval;
+	UniformGenerator uniformGen;
+	ExpGenerator expGen;
+	RequestGenerator reqGen;
 	double alpha;
 	ExecutorService pool;
 	final CountDownLatch start=new CountDownLatch(1);
 	volatile boolean cont=true;
-	RequestCallback callbacks[];
 	Appendable logfiles[];
-	LineReader reader;
 	long maxAppend;
+	int unit;
+	int max_rand;
+	int max_seq;
 
-	interface LineReader{
-		String read(long offset);
-		long len();
-	}
 
-	static class FileLineReader implements LineReader{
-		List<Long> index=new ArrayList<>();
-		RandomAccessFile raf;
+	StaticTree staticTree;
+	DynamicTree dynamicTree;
 
-		public FileLineReader(String fileName,String indexName) throws IOException{
-			try(FileInputStream fis=new FileInputStream(new File(indexName));
-			    RandomAccessFile rf=new RandomAccessFile(new File(fileName),"r")){
-				Scanner sc=new Scanner(fis);
-				while(sc.hasNextLong()) index.add(sc.nextLong());
-				raf=rf;
-			}catch(IOException e){
-				throw e;
-			}
-		}
+	RequestGen(String staticFileName,   //  immutable files
+	           String staticRankFileName,     //  for static file
+	           String dynamicFileName,  //  mutable files, nullable
 
-		@Override
-		public String read(long offset){
-			try{
-				raf.seek(index.get((int)offset));
-				return raf.readLine();
-			}catch(IOException e){
-				log.s(e);
-			}
-			return null;
-		}
+	           //   number of threads
+	           int threads,
+	           Appendable[] logfiles,
+	           //   parameter for exponential distribution, this affects inter-arrival time
+	           double lambda,
+	           int time,
+	           //   parameter for zipf distribution, normally around 0.9.
+	           //   This affects how concentrated your requests are.
+	           double alpha,
+	           //   R/W parameters
+	           //   unit is in bytes, max_rand is how big can a random R/W be, in unit.
+	           int unit,
+	           int max_rand,
+	           int max_seq,
 
-		@Override
-		public long len(){
-			return index.size();
-		}
-	}
-
-	static class RamLineReader implements LineReader{
-		List<String> lines;
-
-		public RamLineReader(String fileName) throws IOException{
-			lines=Files.readAllLines(Paths.get(fileName),Charset.forName("UTF-8"));
-		}
-
-		@Override
-		public String read(long offset){
-			return lines.get((int)offset);
-		}
-
-		@Override
-		public long len(){
-			return lines.size();
-		}
-	}
-
-	RequestGen(int intervalInMilliseconds,
-	           long maxAppend,
-	           LineReader reader,double alpha,
-	           Request.ReqType[] types,double[] ratio,
-	           RequestCallback[] callbacks,
-	           Appendable[] logfiles){
-		if(types.length!=ratio.length)
-			throw new IllegalArgumentException("Length of Request types and ratio do not match.");
-		if(callbacks.length!=logfiles.length)
-			throw new IllegalArgumentException("Length of callback and log files do not match.");
-		this.logfiles=logfiles;
-		this.numThreads=callbacks.length;
-		this.maxAppend=maxAppend;
-		this.callbacks=callbacks;
-		this.interval=intervalInMilliseconds;
+	           //   percentage of each request type, do not need to sum to 1
+	           Map<Request.ReqType, Double> ratio,
+	           //   your handle code for each request
+	           Map<Request.ReqType, RequestCallback> callbacks) throws IOException{
+		if(ratio.size()!=callbacks.size())
+			throw new IllegalArgumentException("Length of request ratio and callback do not match.");
+		if(logfiles!=null && logfiles.length!=threads)
+			throw new IllegalArgumentException("Length of log files and number of threads do not match.");
+		if(logfiles!=null) this.logfiles=logfiles;
+		uniformGen=new UniformGenerator();
+		expGen=new ExpGenerator(lambda,time,uniformGen);
+		reqGen=new RequestGenerator(ratio,uniformGen);
+		numThreads=threads;
 		this.pool=Executors.newFixedThreadPool(numThreads);
-		this.types=types;
-		this.ratio=ratio;
 		this.alpha=alpha;
-		this.reader=reader;
+		staticTree=StaticTree.getStaticTree(staticFileName,uniformGen);
+		staticTree.shuffleFiles(staticRankFileName);
+		this.unit=unit;
+		this.max_rand=max_rand;
+		this.max_seq=max_seq;
+		if(dynamicFileName!=null)
+			dynamicTree=DynamicTree.getDynamicTree(dynamicFileName,uniformGen);
 
 		for(int i=0;i<numThreads;++i){
-			RequestThread t=new RequestThread(callbacks[i],logfiles[i]);
+			RequestThread t=new RequestThread(callbacks,logfiles[i]);
 			pool.execute(t);
 		}
 	}
@@ -122,18 +82,15 @@ public class RequestGen{
 		RandomGenerator zipf;
 		UniformGenerator uniform;
 		long startTime;
-		RequestCallback callback;
-		RequestGenerator reqGen=new RequestGenerator(types,ratio);
+		Map<Request.ReqType, RequestCallback> callback;
 		Formatter fmt;
 		long counter=0;
 		long reqAcc=0;
 		long overheadAcc=0;
 
-		RequestThread(RequestCallback callback,Appendable logfile){
+		RequestThread(Map<Request.ReqType, RequestCallback> callback,Appendable logfile){
 			this.callback=callback;
-			long len=reader.len();
-			uniform=new UniformGenerator(len);
-			this.zipf=new ZipfGenerator(uniform,len,alpha);
+			this.zipf=new ZipfGenerator(alpha,staticTree.getFileSize(),uniform);
 			this.fmt=new Formatter(logfile);
 		}
 
@@ -147,36 +104,58 @@ public class RequestGen{
 			long stopExpect=startTime=System.currentTimeMillis();
 			while(cont){
 				try{
+					long interval=expGen.nextInt();
 					long t1=System.currentTimeMillis();
 					stopExpect+=interval;
-					String line=reader.read(zipf.nextLong());
-					String[] tokens=line.split("[\\s\\[\\]]");
-					int l=tokens.length;
-					Request rq=new Request();
-					String path=tokens[l-1];
-					rq.path=path;
-					if(path.endsWith("/")) rq.isDir=true;
-					if((l==3 || l==2) && !rq.isDir){
-						rq.size=Long.parseLong(tokens[l-2]);
-					}
-					if(rq.isDir){
-						do{
-							rq.type=reqGen.next();
-						}while(rq.type!=Request.ReqType.CREATE && rq.type!=Request.ReqType.DELETE);
+					Request.ReqType type=reqGen.next();
+					Request rq=null;
+					if(dynamicTree==null){
+						if(type==Request.ReqType.LS)
+							rq=staticTree.ls(zipf.nextInt(staticTree.getNonEmptyDirSize()));
+						else rq=staticTree.fileInfo(zipf.nextInt(staticTree.getFileSize()));
 					}else{
-						rq.type=reqGen.next();
-						if(rq.size>0){
-							if(rq.type==Request.ReqType.READ || rq.type==Request.ReqType.WRITE){
-								rq.start=uniform.nextLong(rq.size);
-								rq.end=uniform.nextLong(rq.size-rq.start)+rq.start;
-							}else if(rq.type==Request.ReqType.APPEND)
-								rq.end=uniform.nextLong(maxAppend);
+						if(Request.immutable.contains(type)){
+							if(type==Request.ReqType.LS){
+								int index=zipf.nextInt(staticTree.getNonEmptyDirSize()+dynamicTree.getNonEmptyDirSize());
+								if(index<staticTree.getNonEmptyDirSize()) rq=staticTree.ls(index);
+								else rq=dynamicTree.ls(index-staticTree.getNonEmptyDirSize());
+							}else{
+								int index=zipf.nextInt(staticTree.getFileSize()+dynamicTree.getFileSize());
+								if(index<staticTree.getFileSize()) rq=staticTree.fileInfo(index);
+								else rq=dynamicTree.fileInfo(index-staticTree.getFileSize());
+							}
+						}else{
+							if(type==Request.ReqType.CREATE_DIR){
+								rq=dynamicTree.createDir(zipf.nextInt(dynamicTree.getAllDirSize()));
+							}else if(type==Request.ReqType.CREATE_FILE){
+								rq=dynamicTree.createFile(zipf.nextInt(dynamicTree.getAllDirSize()));
+							}else if(type==Request.ReqType.DELETE){
+								rq=dynamicTree.delete(zipf.nextInt(dynamicTree.getFileSize()));
+							}else if(type==Request.ReqType.RMDIR){
+								rq=dynamicTree.rmdir(zipf.nextInt(dynamicTree.getEmptyDirSize()));
+							}
 						}
 					}
+					rq.type=type;
+					if(type==Request.ReqType.SEQ_READ || type==Request.ReqType.SEQ_WRITE){
+						if(rq.end>unit){
+							rq.start=uniform.nextInt((int)(rq.end-unit));
+							rq.end=rq.start+unit*uniform.nextInt(Math.min((int)(rq.end-rq.start)/unit,max_seq));
+						}
+					}else if(type==Request.ReqType.RANDOM_READ || type==Request.ReqType.RANDOM_WRITE){
+						if(rq.end>unit){
+							rq.start=uniform.nextInt((int)(rq.end-unit));
+							rq.end=rq.start+unit*uniform.nextInt(Math.min((int)(rq.end-rq.start)/unit,max_rand));
+						}
+					}else if(type==Request.ReqType.APPEND){
+						int delta=uniform.nextInt(max_seq)*unit;
+						rq.start=rq.end;
+						rq.end+=delta;
+					}
 					long t2=System.currentTimeMillis();
-					callback.call(rq);
+					callback.get(type).call(rq);
 					long t3=System.currentTimeMillis()-t2;
-					fmt.format("%s %s: %d %d %d: %d",rq.type,rq.path,rq.size,rq.start,rq.end,t3);
+					fmt.format("%s %s: %d %d %d %d: %d",rq.type,rq.path,rq.start,rq.end,rq.start,rq.end,t3);
 					reqAcc+=t3;
 					counter+=1;
 					long t4=System.currentTimeMillis();
@@ -188,7 +167,8 @@ public class RequestGen{
 					log.s(e);
 				}
 			}
-			log.i("Total req: "+counter+", average request time: "+reqAcc/counter+"ms, overhead: "+overheadAcc/counter);
+			log.i("Total req: "+counter+". Real interval: "+(System.currentTimeMillis()-startTime)/counter
+					+", average request time: "+reqAcc/counter+"ms, overhead: "+overheadAcc/counter);
 		}
 	}
 

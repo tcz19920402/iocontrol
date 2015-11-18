@@ -1,32 +1,30 @@
 package req.Rand;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class UniformGenerator implements RandomGenerator{
-	protected Random rand=new Random();
-	protected long upper;
+	protected int upper;
 
-	public UniformGenerator(long upper){
+	public UniformGenerator(int upper){
 		this.upper=upper;
 	}
 
-	@Override
-	public long nextLong(){
-		return nextLong(this.upper);
+	public UniformGenerator(){
+		this.upper=Integer.MAX_VALUE;
 	}
 
-	public long nextLong(long upper){
-		//  http://stackoverflow.com/a/2546186
-		long bits, val;
-		do{
-			bits=(rand.nextLong()<<1)>>>1;
-			val=bits%upper;
-		}while(bits-val+(upper-1)<0L);
-		return val;
+	@Override
+	public int nextInt(){
+		return nextInt(this.upper);
+	}
+
+	@Override
+	public int nextInt(int upper){
+		return ThreadLocalRandom.current().nextInt(upper);
 	}
 
 	@Override
 	public double nextDouble(){
-		return rand.nextDouble();
+		return ThreadLocalRandom.current().nextDouble();
 	}
 }

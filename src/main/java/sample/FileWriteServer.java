@@ -6,6 +6,7 @@ import util.FileHelper;
 import util.Log;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -36,6 +37,7 @@ public class FileWriteServer{
 	static class WriteServer implements MsgHandler{
 		private IOControl control;
 		private Path chunkDir;
+
 		WriteServer(IOControl control,Path chunkDir) throws IOException{
 			this.control=control;
 			this.chunkDir=chunkDir;
@@ -44,23 +46,22 @@ public class FileWriteServer{
 		//  WRITE_CHUNK, WRITE_CHUNK_CACHE
 		void proc(Session session,boolean isPrimary,long start){
 			String id=session.getString("id");
-			final long size=session.getLong("size");
+			final long size=session.getLong("size",0);
 			long timeout=session.getLong("timeout");
 			final long position=session.getLong("position",0);
 			Address primary=session.get("primary",Address.class);   //  nullable
-
 			UUID transID=session.get("transid",UUID.class); //  nullable
 			ArrayList<Address> addresses=session.get("address",ArrayList.class);
-
 			final SocketChannel src=session.getSocketChannel();
 			File newChunk=new File(chunkDir.toFile(),id);
 			Session reply=session.clone();
 			reply.setType(isPrimary ? FileWriteMsgType.WRITE_FAIL : FileWriteMsgType.COMMIT_FAIL);
-			do{
+			try{
 				if(!newChunk.exists() && position>0){
-					log.w("File not exist but position is positive");
-					break;
+					throw new FileNotFoundException("File not exist but position is positive");
 				}
+				if(!newChunk.exists())
+					newChunk.createNewFile();
 				if(isPrimary){
 					primary=addresses.remove(0);
 					transID=UUID.randomUUID();
@@ -69,15 +70,12 @@ public class FileWriteServer{
 				}else{
 					addresses.remove(0);
 				}
-				FileOutputStream fos=null;
-				try{
+				try(FileOutputStream fos=new FileOutputStream(newChunk);
+				    FileChannel dest=fos.getChannel()){
 					do{
-						if(!newChunk.exists())
-							newChunk.createNewFile();
-						fos=new FileOutputStream(newChunk);
-						final FileChannel dest=fos.getChannel();
-						if(addresses.size()==0){
-							//  no more forwarding
+						//  lock only on primary
+						if(isPrimary) dest.lock();
+						if(addresses.size()==0){    //  no more forwarding
 							Future<Object> writeTrans=session.getExecutor().submit(new Callable<Object>(){
 								@Override
 								public Object call() throws Exception{
@@ -87,16 +85,13 @@ public class FileWriteServer{
 							});
 							try{
 								writeTrans.get(timeout+start-System.currentTimeMillis(),TimeUnit.MILLISECONDS);
-								fos.close();
-								if(newChunk.length()==size){
-									reply.setType(isPrimary ? FileWriteMsgType.WRITE_OK : FileWriteMsgType.COMMIT_OK);
-									log.i("File write to: "+newChunk.getAbsolutePath());
-								}
+								reply.setType(isPrimary ? FileWriteMsgType.WRITE_OK : FileWriteMsgType.COMMIT_OK);
+								log.i("File written to: "+newChunk.getAbsolutePath());
+								break;
 							}catch(InterruptedException|ExecutionException|TimeoutException e){
 								log.i(e);
 							}
-						}else{
-							//  do forward
+						}else{  //  do forward
 							Session forward=reply.clone();
 							forward.setType(FileWriteMsgType.WRITE_CHUNK_CACHE);
 							ArrayList<Address> commit_ok=new ArrayList<>();
@@ -107,9 +102,7 @@ public class FileWriteServer{
 							control.send(forward,addresses.get(0));
 							FileHelper.pipe(session.getExecutor(),
 									src,dest,forward.getSocketChannel(),size,position,start,timeout);
-							fos.close();
-							if(newChunk.length()!=size) break;
-							log.i("File write to: "+newChunk.getAbsolutePath());
+							log.i("File written to: "+newChunk.getAbsolutePath());
 							long remain;
 							while((remain=start+timeout-System.currentTimeMillis())>=0){
 								WriteResult r=results.poll(remain,TimeUnit.MILLISECONDS);
@@ -130,14 +123,12 @@ public class FileWriteServer{
 						}
 					}while(false);
 				}catch(Exception e){
-					log.w(e);
-					if(fos!=null)
-						try{
-							fos.close();
-						}catch(IOException ignored){
-						}
+					throw e;
 				}
-			}while(false);
+				forwardResult.remove(transID);
+			}catch(Exception e){
+				log.s(e);
+			}
 			try{
 				if(isPrimary){
 					control.response(reply,session);
@@ -149,7 +140,7 @@ public class FileWriteServer{
 			}
 		}
 
-		private Map<UUID,BlockingQueue<WriteResult>> forwardResult=new ConcurrentHashMap<>();
+		private Map<UUID, BlockingQueue<WriteResult>> forwardResult=new ConcurrentHashMap<>();
 
 		@Override
 		public boolean process(Session session) throws IOException{

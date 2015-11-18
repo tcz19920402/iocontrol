@@ -1,6 +1,7 @@
 package req.Rand;
 
 public interface RandomGenerator{
-	long nextLong();
+	int nextInt();
+	int nextInt(int upper);
 	double nextDouble();
 }

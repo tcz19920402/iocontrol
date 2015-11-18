@@ -53,120 +53,103 @@ public class Log extends Logger{
 		logp(Level.SEVERE,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void severe(String msg,Throwable throwable){
+	public void severe(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
 		logp(Level.SEVERE,caller[0],caller[1],msg,throwable);
 	}
 
-	public synchronized void s(String msg){
+	public void s(String msg){
 		String[] caller=getCaller(className);
 		logp(Level.SEVERE,caller[0],caller[1],msg);
 	}
 
-	public synchronized void s(Throwable throwable){
+	public void s(Throwable throwable){
 		String[] caller=getCaller(className);
 		logp(Level.SEVERE,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void s(String msg,Throwable throwable){
+	public void s(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.SEVERE,caller[0],caller[1],msg,throwable);
 	}
 
-	public synchronized void warning(Throwable throwable){
+	public void warning(Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.WARNING,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void warning(String msg,Throwable throwable){
+	public void warning(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.WARNING,caller[0],caller[1],msg,throwable);
 	}
 
-	public synchronized void w(String msg){
+	public void w(String msg){
 		String[] caller=getCaller(className);
-
 		logp(Level.WARNING,caller[0],caller[1],msg);
 	}
 
-	public synchronized void w(Throwable throwable){
+	public void w(Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.WARNING,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void w(String msg,Throwable throwable){
+	public void w(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.WARNING,caller[0],caller[1],msg,throwable);
 	}
 
-	public synchronized void info(Throwable throwable){
+	public void info(Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.INFO,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void info(String msg,Throwable throwable){
+	public void info(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.INFO,caller[0],caller[1],msg,throwable);
 	}
 
-	public synchronized void i(String msg){
+	public void i(String msg){
 		String[] caller=getCaller(className);
-
 		logp(Level.INFO,caller[0],caller[1],msg);
 	}
 
-	public synchronized void i(Throwable throwable){
+	public void i(Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.INFO,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void i(String msg,Throwable throwable){
+	public void i(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.INFO,caller[0],caller[1],msg,throwable);
 	}
 
-	public synchronized void debug(String msg){
+	public void debug(String msg){
 		String[] caller=getCaller(className);
-
 		logp(Level.FINE,caller[0],caller[1],msg);
 	}
 
-	public synchronized void debug(Throwable throwable){
+	public void debug(Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.FINE,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void debug(String msg,Throwable throwable){
+	public void debug(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.FINE,caller[0],caller[1],msg,throwable);
 	}
 
-	public synchronized void d(String msg){
+	public void d(String msg){
 		String[] caller=getCaller(className);
-
 		logp(Level.FINE,caller[0],caller[1],msg);
 	}
 
-	public synchronized void d(Throwable throwable){
+	public void d(Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.FINE,caller[0],caller[1],"",throwable);
 	}
 
-	public synchronized void d(String msg,Throwable throwable){
+	public void d(String msg,Throwable throwable){
 		String[] caller=getCaller(className);
-
 		logp(Level.FINE,caller[0],caller[1],msg,throwable);
 	}
 }

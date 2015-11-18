@@ -1,5 +1,7 @@
 package req;
 
+import java.util.List;
+
 public interface RequestCallback{
-	void call(Request request);
+	List<Integer> call(Request request);
 }
