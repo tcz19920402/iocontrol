@@ -9,10 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.InvalidParameterException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,6 +37,107 @@ public class StaticTree{
 			}
 			files.set(j,n1);
 		}
+	}
+
+	public void shuffleFiles(){
+		plainShuffle(files,uniform);
+	}
+
+	public void shuffleFilesUneven(String shuffle) throws IOException{
+		try(BufferedReader in=new BufferedReader(new InputStreamReader(
+				new FileInputStream(shuffle),"UTF-8"))){
+			List<List<Integer>> order=new ArrayList<>();
+			for(String line;(line=in.readLine())!=null;){
+				String[] strArray=line.split(",\\s");
+				List<Integer> sort=new ArrayList<>();
+				for(String s : strArray){
+					if(s.trim().length()>0) sort.add(Integer.parseInt(s));
+				}
+				order.add(sort);
+			}
+			unevenShuffle(files,uniform,order);
+		}
+	}
+
+	//  Fisher–Yates
+	public static <T> void plainShuffle(List<T> list,RandomGenerator uniform){
+		for(int i=list.size()-1;i>0;--i){
+			int j=uniform.nextInt(i+1);
+			T t=list.get(i);
+			list.set(i,list.get(j));
+			list.set(j,t);
+		}
+	}
+
+//	static <T,K> void evenShuffle(List<T> list,RandomGenerator uniform,List<List<K>> weight){
+//		if(list.size()!=weight.size())
+//			throw new IllegalArgumentException("Original list size and weight size do not match.");
+//		Map<K, Integer> counter=new HashMap<>();
+//		for(List<K> entry : weight){
+//			for(K key : entry){
+//				Integer i=counter.get(key);
+//				counter.put(key,i==null ? 1 : (i+1));
+//			}
+//		}
+//		int thresh=Collections.min(counter.values());
+//		int[] c=new int[counter.size()];
+//		Arrays.fill(c,0);
+//
+//		Map<K, List<Integer>> map=getCounter(weight);
+//		skew(list,uniform,map);
+//	}
+//
+//	private static <K> Map<K, List<Integer>> getCounter(List<List<K>> weight){
+//		Map<K, List<Integer>> map=new HashMap<>();
+//		for(int i=0;i<weight.size();++i){
+//			List<K> lsk=weight.get(i);
+//			for(K key : lsk){
+//				List<Integer> counter=map.get(key);
+//				if(counter==null){
+//					counter=new ArrayList<>();
+//					map.put(key,counter);
+//				}
+//				counter.add(i);
+//			}
+//		}
+//		return map;
+//	}
+//
+//	private static <K,V> Map.Entry<K, V> getRandEntry(Map<K, V> map){
+//		for(Map.Entry<K, V> entry : map.entrySet()) return entry;
+//		return null;
+//	}
+//
+//	private static <T,K> void skew(List<T> list,RandomGenerator uniform,Map<K, List<Integer>> map){
+//		for(List<Integer> entry : map.values()){
+//			for(int k=entry.size()-1;k>=0;--k){
+//				int i=entry.get(k);
+//				int j=uniform.nextInt(i+1);
+//				T t=list.get(i);
+//				list.set(i,list.get(j));
+//				list.set(j,t);
+//			}
+//		}
+//	}
+
+	public static <T,K> void unevenShuffle(List<T> list,RandomGenerator uniform,List<List<K>> weight){
+		if(list.size()!=weight.size())
+			throw new IllegalArgumentException("Original list size and weight size do not match.");
+//		Map<K, List<Integer>> map=getCounter(weight);
+		Set<K> set=new HashSet<>();
+		for(int i=Math.min(1024,weight.size()-1);i>=0;--i){
+			for(K key : weight.get(i)) set.add(key);
+		}
+		List<K> l=new ArrayList<>(set);
+		K chosen=l.get(uniform.nextInt(l.size()));
+		List<T> removeList=new ArrayList<>();
+		for(int i=0;i<weight.size();++i){
+			if(weight.get(i).contains(chosen)) removeList.add(list.get(i));
+		}
+		list.removeAll(removeList);
+		plainShuffle(list,uniform);
+		plainShuffle(removeList,uniform);
+		list.addAll(0,removeList);
 	}
 
 	static public List<Integer> parseShuffle(String file) throws IOException{
@@ -108,9 +206,11 @@ public class StaticTree{
 
 		@Override
 		public String toString(){
-			if(parent!=null)
-				return parent.toString()+sep+name;
-			else return name;
+			if(parent!=null){
+				if(parent.name.endsWith(sep))
+					return parent.toString()+name;
+				else return parent.toString()+sep+name;
+			}else return name;
 		}
 	}
 
@@ -124,8 +224,15 @@ public class StaticTree{
 
 	public Request ls(int index){
 		if(index<nonEmptyDirs.size())
-			return new Request(nonEmptyDirs.get(index).toString());
+			return new Request(Request.ReqType.LS,nonEmptyDirs.get(index).toString());
 		else return null;
+	}
+
+	public Request append(int index,long addSize){
+		if(index>=files.size()) return null;
+		RandTreeNode result=files.get(index);
+		result.size+=addSize;
+		return new Request(Request.ReqType.APPEND,result.toString(),addSize);
 	}
 
 	public Request fileInfo(int index){
@@ -146,15 +253,16 @@ public class StaticTree{
 		protected void rollback(int indent,Tree tree,boolean fillEmpty){
 			if(ancestors.size()>0){
 				Node last=ancestors.removeLast();
-				if(ancestors.size()==0) tree.emptyDirs.add(last);
-				else{
+				if(ancestors.size()==0){
+					if(fillEmpty) tree.emptyDirs.add(last);
+				}else{
 					if(tree.sep==null){
 						pendingFiles.add(last);
-					}else{
-						if(last.name.endsWith(tree.sep)){    //  dir
-							if(fillEmpty) tree.emptyDirs.add(last);  //  empty dir
-						}else tree.files.add(last); //  file
-					}
+					}//else{
+//						if(last.name.endsWith(tree.sep)){    //  dir
+//							if(fillEmpty) tree.emptyDirs.add(last);  //  empty dir
+//						}else tree.files.add(last); //  file
+//					}
 					while(ancestors.size()>indent) ancestors.removeLast();
 				}
 			}
@@ -186,14 +294,18 @@ public class StaticTree{
 						name=name.substring(4);
 						++indent;
 					}
+
 					name=name.trim();
+//					System.out.println("path:"+name+":"+indent);
 					Node node=(Node)tree.emptyNode();
 					//  set name and possibly size
-					if(indent==0 && line.startsWith("directory")){  //  root
+					if(indent==0 && name.startsWith("directory")){  //  root
 						name=name.replaceFirst("directory\\s*","");
+//						System.out.println("Root:"+name);
 					}else if(pattern && indent>0){   //  non root, check [size,modify time] part
-						Matcher m=reg.matcher(line);
+						Matcher m=reg.matcher(name);
 						if(m.matches()){
+//							System.out.println("[0]"+m.group(0)+" [1]"+m.group(1)+" [2]"+m.group(2)+" [3]"+m.group(3)+" [4]"+m.group(4));
 							name=m.group(4);
 							if(m.group(1)!=null){
 								node.size=Long.parseLong(m.group(2));
@@ -225,7 +337,7 @@ public class StaticTree{
 					}
 					if(tree.sep!=null && !name.endsWith(tree.sep))
 						tree.files.add(node);
-					else ancestors.add(node);
+					ancestors.add(node);
 				}
 				rollback(0,tree,fillEmpty);
 				vacuum(tree,fillEmpty);

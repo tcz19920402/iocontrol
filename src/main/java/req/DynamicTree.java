@@ -2,17 +2,13 @@ package req;
 
 import req.Rand.RandomGenerator;
 import req.Rand.UniformGenerator;
-import util.AutoLock;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+//  I decide not to make this class thread safe so you need to use external.
 public class DynamicTree extends StaticTree{
-	ReadWriteLock lock=new ReentrantReadWriteLock();
-
 	protected DynamicTree(){
 		super();
 	}
@@ -106,53 +102,40 @@ public class DynamicTree extends StaticTree{
 		return emptyDirs.size()+nonEmptyDirs.size();
 	}
 
-	@Override
-	public Request ls(int index){
-		try(AutoLock ignored=AutoLock.lock(lock.readLock())){
-			return super.ls(index);
-		}
-	}
-
-	@Override
-	public Request fileInfo(int index){
-		try(AutoLock ignored=AutoLock.lock(lock.readLock())){
-			return super.fileInfo(index);
-		}
-	}
-
 	public Request rmdir(int index){    //  index in emptyDirs
-		try(AutoLock ignored=AutoLock.lock(lock.writeLock())){
-			if(index<emptyDirs.size()){
-				DynamicRandTreeNode result=(DynamicRandTreeNode)emptyDirs.get(index);
-				result.removeUp();
-				emptyDirs.remove(index);
-				return new Request(result.toString());
-			}else return null;
-		}
+		if(index<emptyDirs.size()){
+			DynamicRandTreeNode result=(DynamicRandTreeNode)emptyDirs.get(index);
+			result.removeUp();
+			emptyDirs.remove(index);
+			Request r=new Request(Request.ReqType.RMDIR,result.toString());
+			if(result.parent!=null) r.next=new Request(Request.ReqType.LS,result.parent.toString());
+			return r;
+		}else return null;
 	}
 
 	public Request delete(int index){   //  index in files
-		try(AutoLock ignored=AutoLock.lock(lock.writeLock())){
-			if(index<files.size()){
-				DynamicRandTreeNode result=(DynamicRandTreeNode)files.get(index);
-				result.removeUp();
-				files.remove(index);
-				return new Request(result.toString(),result.size);
-			}else return null;
-		}
+		if(index<files.size()){
+			DynamicRandTreeNode result=(DynamicRandTreeNode)files.get(index);
+			result.removeUp();
+			files.remove(index);
+			Request r=new Request(result.toString(),result.size);
+			if(result.parent!=null) r.next=new Request(Request.ReqType.LS,result.parent.toString());
+			return r;
+		}else return null;
 	}
 
 	private Request create(int index,boolean isDir){
-		try(AutoLock ignored=AutoLock.lock(lock.writeLock())){
-			DynamicRandTreeNode parent;
-			if(index>=emptyDirs.size()){
-				index-=emptyDirs.size();
-				if(index>=nonEmptyDirs.size()) return null;
-				else parent=(DynamicRandTreeNode)nonEmptyDirs.get(index);
-			}else parent=(DynamicRandTreeNode)emptyDirs.get(index);
-			DynamicRandTreeNode child=isDir ? parent.createDir(index) : parent.createFile(index);
-			return new Request(child.toString());
-		}
+		DynamicRandTreeNode parent;
+		if(index>=emptyDirs.size()){
+			index-=emptyDirs.size();
+			if(index>=nonEmptyDirs.size()) return null;
+			else parent=(DynamicRandTreeNode)nonEmptyDirs.get(index);
+		}else parent=(DynamicRandTreeNode)emptyDirs.get(index);
+		DynamicRandTreeNode child=isDir ? parent.createDir(index) : parent.createFile(index);
+		Request r=new Request(isDir ? Request.ReqType.CREATE_DIR : Request.ReqType.CREATE_FILE,child.toString());
+		r.next=new Request(Request.ReqType.LS,parent.toString());
+		if(!isDir) r.end=0;
+		return r;
 	}
 
 	public Request createFile(int index){   //  index in nonEmptyDirs, then emptyDirs

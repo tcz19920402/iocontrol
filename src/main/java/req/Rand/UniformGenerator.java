@@ -27,4 +27,15 @@ public class UniformGenerator implements RandomGenerator{
 	public double nextDouble(){
 		return ThreadLocalRandom.current().nextDouble();
 	}
+
+	//  http://stackoverflow.com/a/2546186/5573989
+	public long nextLong(long upper){
+		// error checking and 2^x checking removed for simplicity.
+		long bits, val;
+		do{
+			bits=(ThreadLocalRandom.current().nextLong()<<1)>>>1;
+			val=bits%upper;
+		}while(bits-val+(upper-1)<0L);
+		return val;
+	}
 }

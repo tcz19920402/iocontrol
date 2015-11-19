@@ -31,7 +31,7 @@ public class RequestGenerator{
 		for(Map.Entry<Request.ReqType, Double> entry : sorted){
 			types[i]=entry.getKey();
 			steps[i++]=entry.getValue();
-			System.out.println(entry.getKey()+":"+entry.getValue());
+//			System.out.println(entry.getKey()+":"+entry.getValue());
 			sum+=entry.getValue();
 		}
 		if(len>0){

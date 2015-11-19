@@ -22,6 +22,21 @@ public class Request implements Serializable{
 	public Request(){
 	}
 
+	public Request(ReqType type){
+		this.type=type;
+	}
+
+	public Request(ReqType type,String path){
+		this.type=type;
+		this.path=path;
+	}
+
+	public Request(ReqType type,String path,long size){
+		this.type=type;
+		this.path=path;
+		this.end=size;
+	}
+
 	public Request(String path){
 		this.path=path;
 	}
@@ -35,4 +50,10 @@ public class Request implements Serializable{
 	public long start=0;    //start position for read, write
 	public long end=-1;     //end position for read, write; append size for append
 	public String path=null;
+	public Request next=null;
+
+	@Override
+	public String toString(){
+		return String.format("%s : %s,%d:%d",type,path,start,end);
+	}
 }

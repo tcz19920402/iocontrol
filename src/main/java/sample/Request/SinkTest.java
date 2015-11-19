@@ -1,3 +1,5 @@
+package sample.Request;
+
 import req.Rand.ContentSink;
 
 import java.io.IOException;

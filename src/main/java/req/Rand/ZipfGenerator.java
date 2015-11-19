@@ -48,8 +48,10 @@ public class ZipfGenerator implements RandomGenerator{
 
 	@Override
 	public int nextInt(int upper){
-		this.upper=upper;
-		this.hIntegralNumberOfElements=hIntegral(upper+0.5);
+		if(upper!=this.upper){
+			this.upper=upper;
+			this.hIntegralNumberOfElements=hIntegral(upper+0.5);
+		}
 		return nextInt();
 	}
 
