@@ -1,10 +1,20 @@
 # Intro
 This is code base for CS 6343 - CLOUD COMPUTING
 
-# How to use
-The heart of this piece of code is IOControl. It wraps on TCP socket and offers request/response interface as well as server in filter/handler structure.
+# How to use request generator
+You are expected to re-write|modify files under sample/Request to get your own request generator, since io functions for each file system differ. The suggested way is to copy/past useful functions|code snippets to your own classes and do modifications accordingly.
 
-A request is represent by a Session, which you can insert any key/value into request and extract from server side. A session has its MsgType, which you can define yourself by implementing MsgType interface.
+Note for tree file outputed by listfs.py: the root directory name is number (directory XX), please replace the number XX to your own name, so multiple tree files can be concatenated together.
+
+* SrcTest - We offer req/rand/ContentSrc, a file like object to fill content of file. You can upload from it to any nio channel, which can be also easily obtained from File object. This demos how to copy content to system.out. Of course, it's also ok to call external programs like dd.
+* SinkTest - We also offer req/rand/ContentSink to digest file content you read.
+* FSPropagate - This is demo on how to generate your file system structure from a tree output from listfs.py. You are expected to write a class implementing req/RequestCallback (re-write NullCall part), which takes file info (req/Request) as parameter, and call your own file|dir creation functions accordingly. For those who need to generate unbalanced requests, the return value is a list of node id on which files are allocated, and that list will be recorded to a rank file.
+* ReqGenerator - This is sample request generator. It also expects you to offer your own req/RequestCallback (re-write dump) implementations for each request type. You might also consider adding more time profiling in run() method to get finer grain of performance. So far it only logs total number of request and average time for request|overhead|overall (request+overhead+sleep). The default implementation can also takes a ranking file to generate un-even request patent (call req/StaticTree.shuffleFilesUneven), else if the parameter is null, it generates zipf style patent, which favors files placed in front of tree file (if not shuffled), or shuffled order (if shuffled by calling req/StaticTree.shuffleFiles). 
+
+# How to use iocontrol io lib
+The heart of this piece of code is IOControl. It wraps over TCP socket and offers request/response interface as well as server in filter/handler structure.
+
+A request is a self-contained Session object, into which you can insert any key/value, and extract from receiver side. A session has its MsgType, which you can define yourself by implementing MsgType interface.
 
 A MsgFilter intercepts raw connect without extracting session (you should not extract session manually, The framework will extract for you). Multiple filters can be chained.
 

@@ -24,6 +24,11 @@ public class ContentSink implements WritableByteChannel{
 	int truncate;
 	boolean truncated=false;
 
+	/**
+	 * To digest file content.
+	 *
+	 * @param truncate print up to truncate chars to prevent flooding your log
+	 */
 	public ContentSink(int truncate){
 		this.truncate=truncate;
 		decoder.onMalformedInput(CodingErrorAction.REPLACE);
@@ -31,6 +36,12 @@ public class ContentSink implements WritableByteChannel{
 		buffer=CharBuffer.allocate(truncate);
 	}
 
+	/**
+	 * To digest file content.
+	 *
+	 * @param l        if you would like to print to other Log than default one.
+	 * @param truncate print up to truncate chars to prevent flooding your log
+	 */
 	public ContentSink(Log l,int truncate){
 		this.truncate=truncate;
 		decoder.onMalformedInput(CodingErrorAction.REPLACE);
