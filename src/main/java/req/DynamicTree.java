@@ -23,7 +23,7 @@ public class DynamicTree extends StaticTree{
 
 	public static DynamicTree getDynamicTree(String filename,UniformGenerator uniform) throws IOException{
 		DynamicTree tree=new DynamicTree(uniform);
-		new TreeParser<DynamicTree, DynamicRandTreeNode>().parse(tree,filename,true);
+		new TreeParser<DynamicTree,DynamicRandTreeNode>().parse(tree,filename,true);
 		return tree;
 	}
 
@@ -33,7 +33,7 @@ public class DynamicTree extends StaticTree{
 	}
 
 	protected class DynamicRandTreeNode extends RandTreeNode{
-		Map<String, DynamicRandTreeNode> children=null;
+		Map<String,DynamicRandTreeNode> children=null;
 
 		DynamicRandTreeNode removeUp(){
 			if(parent!=null){
@@ -118,7 +118,7 @@ public class DynamicTree extends StaticTree{
 			DynamicRandTreeNode result=(DynamicRandTreeNode)files.get(index);
 			result.removeUp();
 			files.remove(index);
-			Request r=new Request(result.toString(),result.size);
+			Request r=new Request(Request.ReqType.DELETE,result.toString(),result.size);
 			if(result.parent!=null) r.next=new Request(Request.ReqType.LS,result.parent.toString());
 			return r;
 		}else return null;
