@@ -4,6 +4,8 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import req.Rand.ContentSink;
+import req.Rand.ContentSrc;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -49,6 +51,12 @@ public class FileHelper{
 			position+=src.transferTo(position,size-position,dest);
 	}
 
+	public static void upload(ContentSrc src,SocketChannel dest,long size) throws IOException{
+		long position=0;
+		while(position<size)
+			position+=src.transferTo(dest,size-position);
+	}
+
 	/**
 	 * Download bytes from socket channel to local disk file channel, this method will download up to size-position bytes.
 	 *
@@ -73,6 +81,12 @@ public class FileHelper{
 	 */
 	public static void download(SocketChannel src,FileChannel dest,long size) throws IOException{
 		download(src,dest,size,0);
+	}
+
+	public static void download(SocketChannel src,ContentSink dest,long size) throws IOException{
+		long position=0;
+		while(position<size)
+			position+=dest.transferFrom(src,size-position);
 	}
 
 	/**
