@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class IOControl{
 	private static final Log log=Log.get();
 	private static int maxRetry=3;
-	private final GenericKeyedObjectPool<Address, SocketChannel> socketPool=new GenericKeyedObjectPool<>(new SocketPoolFactory());
-	private Map<MsgType, ArrayList<MsgHandler>> handlerChain=new HashMap<>();
+	private final GenericKeyedObjectPool<Address,SocketChannel> socketPool=new GenericKeyedObjectPool<>(new SocketPoolFactory());
+	private Map<MsgType,ArrayList<MsgHandler>> handlerChain=new HashMap<>();
 	private List<MsgFilter> filters=new ArrayList<>();
 	private BlockingQueue<InternalCmd> exitQueue=new LinkedBlockingQueue<>();
 	private Queue<InternalCmd> cmdQueue=new ConcurrentLinkedQueue<>();
@@ -279,6 +279,12 @@ public class IOControl{
 	 * @throws Exception If operation cannot be done.
 	 */
 	public void send(Session session,String ip,int port) throws Exception{
+		Address address=new Address(ip,port);
+		SocketChannel channel=_send(session,ip,port);
+		socketPool.returnObject(address,channel);
+	}
+
+	public SocketChannel _send(Session session,String ip,int port) throws Exception{
 		SocketChannel cachedSocket;
 		Address address=new Address(ip,port);
 		IOException lastIO=null;
@@ -296,8 +302,7 @@ public class IOControl{
 				oos.flush();
 				session.setSocketChannel(cachedSocket);
 				session.setSocket(cachedSocket.socket());
-				socketPool.returnObject(address,cachedSocket);
-				return;
+				return cachedSocket;
 			}catch(IOException e){
 				lastIO=e;
 				try{
@@ -351,9 +356,13 @@ public class IOControl{
 	 * @throws Exception
 	 */
 	public Session request(Session session,String ip,int port) throws Exception{
-		send(session,ip,port);
+//		send(session,ip,port);
+		Address address=new Address(ip,port);
+		SocketChannel socket=_send(session,ip,port);
 		SocketChannel socketChannel=session.getSocketChannel();
-		return process(socketChannel);
+		Session result=process(socketChannel);
+		socketPool.returnObject(address,socket);
+		return result;
 	}
 
 	/**
@@ -376,7 +385,7 @@ public class IOControl{
 		return request(session,address.getIp(),address.getPort());
 	}
 
-	static class SocketPoolFactory extends BaseKeyedPooledObjectFactory<Address, SocketChannel>{
+	static class SocketPoolFactory extends BaseKeyedPooledObjectFactory<Address,SocketChannel>{
 		@Override
 		public SocketChannel create(Address address) throws Exception{
 			return SocketChannel.open(new InetSocketAddress(address.getIp(),address.getPort()));
