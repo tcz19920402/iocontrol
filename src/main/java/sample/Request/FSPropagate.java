@@ -31,21 +31,43 @@ public class FSPropagate{
 	public static class NullCall implements RequestCallback{
 		List<Integer> order=new ArrayList<>();
 		RandomGenerator uniform=new UniformGenerator();
-
-		public NullCall(){
+		LListenRequests listener;
+		public NullCall(LListenRequests listener){
+			this.listener=listener;
 			for(int i=1;i<10;++i) order.add(i);
+			
 		}
 
+		public NullCall(){
+			this.listener=listener;
+			for(int i=1;i<10;++i) order.add(i);
+			
+		}
+		
 		@Override
 		public List<Integer> call(Request request){
 			StaticTree.plainShuffle(order,uniform);
 			int find=uniform.nextInt(6)+1; //  1~6
-			System.out.println(request+" : "+find);
+			if(listener==null)
+				System.out.println(request+" : "+find);
+			else
+				listener.listenRequests(request+" : "+find);
 			return order.subList(0,find);
 		}
 	}
+	
+	public static void run(String[] args,LListenRequests listener){
+		try {
+			parse(args[0],args[1],new NullCall(listener));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 
 	public static void main(String args[]) throws IOException{
-		parse("files/test.txt","files/rank.txt",new NullCall());
+		parse("files/test2.txt","files/rank.txt",new NullCall());
+		
 	}
 }
