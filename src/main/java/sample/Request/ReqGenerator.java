@@ -252,7 +252,7 @@ public class ReqGenerator{
 
 		@Override
 		public List<Integer> call(Request request){
-//			log.i(request.toString());
+			log.i(request.toString());
 			return null;
 		}
 	}
