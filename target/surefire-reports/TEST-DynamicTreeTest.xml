@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="0" failures="0" name="DynamicTreeTest" time="0.002" errors="0" skipped="0">
+  <properties>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="sun.boot.library.path" value="D:\Java\Java8_JRE\bin"/>
+    <property name="java.vm.version" value="25.74-b02"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="java.vendor.url" value="http://java.oracle.com/"/>
+    <property name="path.separator" value=";"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="file.encoding.pkg" value="sun.io"/>
+    <property name="user.script" value=""/>
+    <property name="user.country" value="CN"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.os.patch.level" value=""/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="user.dir" value="G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb"/>
+    <property name="java.runtime.version" value="1.8.0_74-b02"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.Win32GraphicsEnvironment"/>
+    <property name="basedir" value="G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb"/>
+    <property name="java.endorsed.dirs" value="D:\Java\Java8_JRE\lib\endorsed"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="surefire.real.class.path" value="G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\surefire\surefirebooter1610898212277540298.jar"/>
+    <property name="java.io.tmpdir" value="C:\Users\Roberto\AppData\Local\Temp\"/>
+    <property name="line.separator" value="
+"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.variant" value=""/>
+    <property name="os.name" value="Windows 10"/>
+    <property name="sun.jnu.encoding" value="GBK"/>
+    <property name="java.library.path" value="D:\Java\Java8_JRE\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\ProgramData\Oracle\Java\javapath;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;D:\Java\Java8\bin;D:\Maven\apache-maven-3.3.9\bin;D:\git\Git\cmd;C:\Users\Roberto\AppData\Local\Microsoft\WindowsApps;;."/>
+    <property name="surefire.test.class.path" value="G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\test-classes;G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\classes;C:\Users\Roberto\.m2\repository\org\ini4j\ini4j\0.5.4\ini4j-0.5.4.jar;C:\Users\Roberto\.m2\repository\org\apache\commons\commons-pool2\2.4.2\commons-pool2-2.4.2.jar;C:\Users\Roberto\.m2\repository\org\apache\commons\commons-math3\3.6.1\commons-math3-3.6.1.jar;"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.class.version" value="52.0"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="10.0"/>
+    <property name="user.home" value="C:\Users\Roberto"/>
+    <property name="user.timezone" value=""/>
+    <property name="java.awt.printerjob" value="sun.awt.windows.WPrinterJob"/>
+    <property name="java.specification.version" value="1.8"/>
+    <property name="file.encoding" value="GBK"/>
+    <property name="user.name" value="Roberto"/>
+    <property name="java.class.path" value="G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\test-classes;G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\classes;C:\Users\Roberto\.m2\repository\org\ini4j\ini4j\0.5.4\ini4j-0.5.4.jar;C:\Users\Roberto\.m2\repository\org\apache\commons\commons-pool2\2.4.2\commons-pool2-2.4.2.jar;C:\Users\Roberto\.m2\repository\org\apache\commons\commons-math3\3.6.1\commons-math3-3.6.1.jar;"/>
+    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.home" value="D:\Java\Java8_JRE"/>
+    <property name="sun.java.command" value="G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\surefire\surefirebooter1610898212277540298.jar G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\surefire\surefire2286339988786151068tmp G:\2016FALL\Cloud Computing\project\cuzn222-iocontrol-aa1f01ef43eb\cuzn222-iocontrol-aa1f01ef43eb\target\surefire\surefire60587265237049329tmp"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.language" value="zh"/>
+    <property name="awt.toolkit" value="sun.awt.windows.WToolkit"/>
+    <property name="java.vm.info" value="mixed mode"/>
+    <property name="java.version" value="1.8.0_74"/>
+    <property name="java.ext.dirs" value="D:\Java\Java8_JRE\lib\ext;C:\WINDOWS\Sun\Java\lib\ext"/>
+    <property name="sun.boot.class.path" value="D:\Java\Java8_JRE\lib\resources.jar;D:\Java\Java8_JRE\lib\rt.jar;D:\Java\Java8_JRE\lib\sunrsasign.jar;D:\Java\Java8_JRE\lib\jsse.jar;D:\Java\Java8_JRE\lib\jce.jar;D:\Java\Java8_JRE\lib\charsets.jar;D:\Java\Java8_JRE\lib\jfr.jar;D:\Java\Java8_JRE\classes"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="localRepository" value="C:\Users\Roberto\.m2\repository"/>
+    <property name="file.separator" value="\"/>
+    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="sun.desktop" value="windows"/>
+    <property name="sun.cpu.isalist" value="amd64"/>
+  </properties>
+</testsuite>
