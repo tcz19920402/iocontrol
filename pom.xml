@@ -6,10 +6,15 @@
 	<groupId>edu.utdalls</groupId>
 	<artifactId>net-control</artifactId>
 	<version>1.0-SNAPSHOT</version>
+<<<<<<< HEAD
 	<packaging>jar</packaging>
 
 	<name>Distributed File System @ UTD</name>
 	<url>http://maven.apache.org</url>
+=======
+
+	<name>Distributed File System @ UTD</name>
+>>>>>>> aa1f01ef43ebb0da3df4514791682560ac9cc046
 
 	<dependencies>
 		<dependency>
@@ -28,6 +33,7 @@
 			<version>[3.5,)</version>
 		</dependency>
 	</dependencies>
+<<<<<<< HEAD
 	<build>
 		<finalName>iocontrol_tool</finalName>
 		<plugins>
@@ -42,4 +48,10 @@
 			</plugin>
 		</plugins>
 	</build>
+=======
+	<properties>
+		<maven.compiler.source>1.7</maven.compiler.source>
+		<maven.compiler.target>1.7</maven.compiler.target>
+	</properties>
+>>>>>>> aa1f01ef43ebb0da3df4514791682560ac9cc046
 </project>
