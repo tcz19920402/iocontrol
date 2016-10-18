@@ -1,2 +1,8 @@
+.settings/
+conf/
+files/
+target/
 .classpath
 readme.md
+pom.xml
+.gitignore
