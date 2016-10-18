@@ -51,10 +51,7 @@ public class FSPropagate{
 			if(listener==null)
 				System.out.println(request+" : "+find);
 			else
-<<<<<<< HEAD
 				//System.out.println(request+" : "+find);
-=======
->>>>>>> aa1f01ef43ebb0da3df4514791682560ac9cc046
 				listener.listenRequests(request+" : "+find);
 			return order.subList(0,find);
 		}
@@ -71,11 +68,7 @@ public class FSPropagate{
 	
 
 	public static void main(String args[]) throws IOException{
-<<<<<<< HEAD
 		parse("files/test.txt","files/rank.txt",new NullCall());
-=======
-		parse("files/test2.txt","files/rank.txt",new NullCall());
->>>>>>> aa1f01ef43ebb0da3df4514791682560ac9cc046
 		
 	}
 }
