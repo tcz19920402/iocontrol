@@ -9,7 +9,7 @@ import req.StaticTree;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-
+			
 public class FSPropagate{
 	public static String printLine(List list){
 		String lstring=list.toString();
